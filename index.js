@@ -1,65 +1,65 @@
 const express = require("express");
 const app = express();
 const { connectDB } = require("./config/database");
-const {userModel} = require("./models/users");
+const { userModel } = require("./models/users");
 
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
+  const User = new userModel(req.body);
 
-   const User = new userModel(req.body);
-  
-   console.log(req.body);
+  console.log(req.body);
 
-   try{
-     await User.save();
-     res.send("saved successfully"); 
-   }
-   catch(err)
-   {
+  try {
+    await User.save();
+    res.send("saved successfully");
+  } catch (err) {
     res.status(400).send(err.message);
-   }
-});
-
-app.get("/find",async(req,res)=> {
-     
-  const email = await userModel.findOne({email:"Sac@gmail.com"});
-  if(email.length ===  0)
-  {
-      res.send("No email found");
-  }
-  else
-  {
-      res.send(email);
   }
 });
 
+app.get("/find", async (req, res) => {
+  const email = await userModel.findOne({ email: "Sac@gmail.com" });
+  if (email.length === 0) {
+    res.send("No email found");
+  } else {
+    res.send(email);
+  }
+});
 
-app.get("/feed", async(req,res)=>{
-    
-  try{
-      
+app.get("/feed", async (req, res) => {
+  try {
     const feed = await userModel.find({});
     res.send(feed);
     console.log("Showing all the feed");
-  }catch(err)
-  {
-      res.status(400).send(err.message);
+  } catch (err) {
+    res.status(400).send(err.message);
   }
 });
 
-app.delete("/delete", async(req,res)=>{
-      const id = req.body.userId;
-      try{
-        const delet = await userModel.findOneAndDelete({ _id: id });
-        res.send("deleted successfully");
-      }
-      catch(err)
-      {
-        res.status(400).send(err.message);
-      }
+app.delete("/delete", async (req, res) => {
+  const id = req.body.userId;
+  try {
+    const delet = await userModel.findOneAndDelete({ _id: id });
+    res.send("deleted successfully");
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
 });
- 
+
+app.patch("/user", async (req, res) => {
+  const userId  = req.body.userId;
+  const data = req.body;
+  try{
+    const updated = await userModel.findByIdAndUpdate(userId,data);
+    console.log(updated);
+    res.send("Updated Sucessfully");
+  }catch(err)
+  {
+    res.status(400).send(err.message);
+  }
+});
+
 connectDB()
   .then(() => {
     console.log("Connected");

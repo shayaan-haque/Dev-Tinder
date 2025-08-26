@@ -1,8 +1,11 @@
+const dotenv = require("dotenv");
 const mongoose = require("mongoose");
+
+dotenv.config();
 
 const connectDB = async () => {
   mongoose.connect(
-    "mongodb+srv://shayaanhaquedgp:Shayaan_6565@nmnodes2.ckjliew.mongodb.net/devTinder?retryWrites=true&w=majority&appName=NMNodeS2"
+     process.env.URL
   );
 };
 
