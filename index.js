@@ -1,16 +1,31 @@
 const express = require("express");
 const app = express();
+const bcrypt = require("bcrypt");
 const { connectDB } = require("./config/database");
 const { userModel } = require("./models/users");
+const { validateData } = require("./utils/validation");
+const cookie = require("cookie");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const { authentication } = require("./utils/middleware");
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.post("/signup", async (req, res) => {
-  const User = new userModel(req.body);
-
-  console.log(req.body);
-
   try {
+    validateData(req);
+
+    const { firstName, lastName, email, password } = req.body;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const User = new userModel({
+      firstName,
+      lastName,
+      email,
+      password: passwordHash,
+    });
+
     await User.save();
     res.send("saved successfully");
   } catch (err) {
@@ -18,46 +33,44 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-app.get("/find", async (req, res) => {
-  const email = await userModel.findOne({ email: "Sac@gmail.com" });
-  if (email.length === 0) {
-    res.send("No email found");
-  } else {
-    res.send(email);
-  }
-});
-
-app.get("/feed", async (req, res) => {
+app.post("/login", async (req, res) => {
   try {
-    const feed = await userModel.find({});
-    res.send(feed);
-    console.log("Showing all the feed");
+    const { email, password } = req.body;
+    const User = await userModel.findOne({ email: email });
+
+    if (!User) {
+      throw new Error("Invalid Login credentials 1 ");
+    }
+
+    const isPassword = await bcrypt.compare(password, User.password);
+
+    if (isPassword) {
+      const token = await User.getJWT();
+      res.cookie("token", token);
+      res.send("Logged in successfully");
+    } else {
+      throw new Error("Invalid Login credentials 2 ");
+    }
   } catch (err) {
     res.status(400).send(err.message);
   }
 });
 
-app.delete("/delete", async (req, res) => {
-  const id = req.body.userId;
+app.get("/profile", authentication, async (req, res) => {
   try {
-    const delet = await userModel.findOneAndDelete({ _id: id });
-    res.send("deleted successfully");
+    const user = req.user;
+    if (!user) {
+      throw new Error("User does not exists");
+    }
+    res.send(user);
   } catch (err) {
-    res.status(400).send(err.message);
+    res.send(err.message);
   }
 });
 
-app.patch("/user", async (req, res) => {
-  const userId  = req.body.userId;
-  const data = req.body;
-  try{
-    const updated = await userModel.findByIdAndUpdate(userId,data);
-    console.log(updated);
-    res.send("Updated Sucessfully");
-  }catch(err)
-  {
-    res.status(400).send(err.message);
-  }
+app.post("/sendCR", authentication, async (req, res) => {
+  const name = req.user.firstName;
+  res.send("Connection Sent Successfully by " + name);
 });
 
 connectDB()
